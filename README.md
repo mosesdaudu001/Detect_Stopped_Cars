@@ -11,6 +11,8 @@ Install all requirements
 ## Step 2:
 Edit the `FILE_PATH` argument in line 7 and input the path to the video you want to use
 
+`Please note that I used the object path for my local computer, ensure to use yours to avoid problems`
+
 ## Step 3:
 Run the `python` file
 
