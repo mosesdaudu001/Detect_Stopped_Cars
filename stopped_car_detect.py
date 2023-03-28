@@ -37,6 +37,7 @@ while True:
     detections = np.empty((0,5))
 
     for r in results:
+        counter+=1
         boxes = r.boxes
         for box in boxes:
             x1,y1,x2,y2 = box.xyxy[0]
@@ -54,7 +55,6 @@ while True:
     resultTracker = tracker.update(detections)     
 
     for res in resultTracker:
-        counter+=1
         x1,y1,x2,y2,id = res
         x1,y1,x2,y2, id = int(x1), int(y1), int(x2), int(y2), int(id)
         w,h = x2-x1, y2-y1
