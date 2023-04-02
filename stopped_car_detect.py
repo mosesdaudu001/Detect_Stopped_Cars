@@ -4,7 +4,7 @@ import cvzone
 import math
 from sort import *
 
-FILE_PATH = "C:/Users/itani/Downloads/roi/GitHub_Projects/Detect_Stopped_Cars/Videos/traffic.mp4"
+FILE_PATH = "Videos/traffic.mp4"
 
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -18,13 +18,13 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
               "teddy bear", "hair drier", "toothbrush"
               ]
 # For Mask
-mask = cv2.imread('C:/Users/itani/Downloads/roi/GitHub_Projects/Detect_Stopped_Cars/masks/mask_traffic_2.png')
+mask = cv2.imread('masks/mask_traffic_2.png')
 
 # For Tracker
 tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.3)
 cap  = cv2.VideoCapture(FILE_PATH)
 # model = YOLO("C:/Users/itani/Downloads/roi/GitHub_Projects/Detect_Stopped_Cars/yolo_weights/yolov8n.pt") 
-model = YOLO("C:/Users/itani/Downloads/roi/GitHub_Projects/Calculate_Vehicle_Speed/yolo_weights/yolov8l.pt") 
+model = YOLO("yolo_weights/yolov8n.pt") 
 
 
 last_centroids = {}  # dictionary to store the last centroid of each object
