@@ -11,7 +11,6 @@ Install all requirements
 ## Step 2: Run the `python` file
 `pip install -r requirements.txt`
 
-
 Contact Moses at `mosesdaudu001@gmail.com` for adjustments to suit your needs.
 
 ### Side Notes:
