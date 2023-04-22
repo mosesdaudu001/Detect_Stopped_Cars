@@ -3,83 +3,128 @@ import cv2
 import cvzone
 import math
 from sort import *
+import os
 
-FILE_PATH = "Videos/traffic.mp4"
+class ObjectDetection():
 
-classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
-              "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
-              "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
-              "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
-              "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
-              "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli",
-              "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed",
-              "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone",
-              "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
-              "teddy bear", "hair drier", "toothbrush"
-              ]
-# For Mask
-mask = cv2.imread('masks/mask_traffic_2.png')
+    def __init__(self, capture, result):
+        self.capture = capture
+        self.result = result
+        self.model = self.load_model()
+        self.CLASS_NAMES_DICT = self.model.model.names
 
-# For Tracker
-tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.3)
-cap  = cv2.VideoCapture(FILE_PATH)
-# model = YOLO("C:/Users/itani/Downloads/roi/GitHub_Projects/Detect_Stopped_Cars/yolo_weights/yolov8n.pt") 
-model = YOLO("yolo_weights/yolov8n.pt") 
+    def load_model(self):
+        model = YOLO("yolo_weights/yolov8n.pt")
+        model.fuse()
 
+        return model
+    
+    def predict(self, img):
+        results = self.model(img, stream=True)
+        return results
+    
+    def plot_boxes(self, results, detections, counter):
 
-last_centroids = {}  # dictionary to store the last centroid of each object
-current_centroids = {}  # dictionary to store the current centroid of each object
-counter = 0
+        for r in results:
+            counter+=1
+            boxes = r.boxes
+            for box in boxes:
+                x1,y1,x2,y2 = box.xyxy[0]
+                x1,y1,x2,y2 = int(x1),int(y1),int(x2),int(y2)
+                w,h = x2-x1, y2-y1
 
-while True:
-    _, img = cap.read()
-    img_reg = cv2.bitwise_and(img, mask)
+                # Classname
+                cls = int(box.cls[0])
+                currentClass = self.CLASS_NAMES_DICT[cls]
 
-    results = model(img_reg, stream=True)
-    detections = np.empty((0,5))
+                # Confodence score
+                conf = math.ceil(box.conf[0]*100)/100
 
-    for r in results:
-        counter+=1
-        boxes = r.boxes
-        for box in boxes:
-            x1,y1,x2,y2 = box.xyxy[0]
-            x1,y1,x2,y2 = int(x1),int(y1),int(x2),int(y2)
+                if conf > 0.5:
+                    currentArray = np.array([x1,y1,x2,y2,conf])
+                    detections = np.vstack((detections, currentArray))
+                    
+        return detections, counter
+   
+    def track_detect(self, img, detections, tracker, last_centroids, stopped_vehicles, counter):
+        resultTracker = tracker.update(detections)
 
-            # Classname
-            cls = int(box.cls[0])
+        for res in resultTracker:
+            x1,y1,x2,y2,id = res
+            x1,y1,x2,y2, id = int(x1), int(y1), int(x2), int(y2), int(id)
+            w,h = x2-x1, y2-y1
 
-            # Confodence score
-            conf = math.ceil(box.conf[0]*100)/100
-            if conf > 0.5:
-                currentArray = np.array([x1,y1,x2,y2,conf])
-                detections = np.vstack((detections, currentArray))
+            cvzone.putTextRect(img, f'{id}', (x1,y1), scale=1, thickness=1, colorR=(0,0,255))
+            cvzone.cornerRect(img, (x1,y1,w,h), l=9, rt=1, colorR=(255,0,255))
 
-    resultTracker = tracker.update(detections)     
+            cx, cy = x1 + w // 2, y1 + h // 2
+            cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)   
 
-    for res in resultTracker:
-        x1,y1,x2,y2,id = res
-        x1,y1,x2,y2, id = int(x1), int(y1), int(x2), int(y2), int(id)
-        w,h = x2-x1, y2-y1
+            # For detecting stopped vehicles
+            if counter % 10 == 0:
 
-        cvzone.putTextRect(img, f'{id}', (x1,y1), scale=1, thickness=1, colorR=(0,0,255))
-        cvzone.cornerRect(img, (x1,y1,w,h), l=9, rt=1, colorR=(255,0,255))
+                if id in last_centroids:
+                    last_cx, last_cy = last_centroids[id]
+                    distance = ((cx - last_cx)**2 + (cy - last_cy)**2)**0.5  # Euclidean distance between last and current centroids
 
-        cx, cy = x1 + w // 2, y1 + h // 2
-        cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)   
+                    if distance < 5:
+                        stopped_vehicles.append(id)
+                last_centroids[id] = (cx, cy)
 
-        # For detecting stopped vehicles
-        if counter % 10 == 0:
-            if id in last_centroids:
-                last_cx, last_cy = last_centroids[id]
-                distance = ((cx - last_cx)**2 + (cy - last_cy)**2)**0.5  # Euclidean distance between last and current centroids
-                if distance < 5:
-                    # Object did not move or moved less than the threshold distance
-                    print("Object {} is not moving in location LOC_OBJECT ".format(id))
-                    cv2.putText(img, f'Vehicle_ID: {id} not moving',(10,50),cv2.FONT_HERSHEY_PLAIN,3,(50,50,255),8)
-            last_centroids[id] = (cx, cy)
-            current_centroids[id] = (cx, cy)
+            if stopped_vehicles.count(id) > 1:
+                cv2.putText(img, f'Vehicle_ID: {id} not moving',(10,50),cv2.FONT_HERSHEY_PLAIN,3,(50,50,255),8)
+                print("Object {} is not moving in location LOC_OBJECT ".format(id))
 
 
-    cv2.imshow('Image', img)
-    if cv2.waitKey(1) == ord('q'):
-        break
+
+        return img
+
+    def __call__(self):
+
+        cap = cv2.VideoCapture(self.capture)
+        assert cap.isOpened()
+
+        result_path = os.path.join(self.result, 'results.avi')
+
+        codec = cv2.VideoWriter_fourcc(*'XVID')
+        vid_fps =int(cap.get(cv2.CAP_PROP_FPS))
+        vid_width,vid_height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        out = cv2.VideoWriter(result_path, codec, vid_fps, (vid_width, vid_height))
+
+        mask = cv2.imread('masks/mask_traffic_2.png')
+
+        tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.3)
+
+        if not os.path.exists(self.result):
+            os.makedirs(self.result)
+            print("Result folder created successfully")
+        else:
+            print("Result folder already exist")
+
+        last_centroids = {}  # dictionary to store the last centroid of each object
+        stopped_vehicles = []  # dictionary to store the current centroid of each object
+        counter = 0
+
+        while True:
+
+            _, img = cap.read()
+            assert _
+            img_reg = cv2.bitwise_and(img, mask)
+            
+            detections = np.empty((0,5))
+            results = self.predict(img_reg)
+            detections, counter = self.plot_boxes(results, detections, counter)
+            detect_frame = self.track_detect(img, detections, tracker, last_centroids, stopped_vehicles, counter)
+
+            out.write(detect_frame)
+            cv2.imshow('Image', detect_frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+        
+        
+    
+detector = ObjectDetection(capture="Videos/traffic.mp4", result='result')
+detector()
