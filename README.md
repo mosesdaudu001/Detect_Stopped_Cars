@@ -15,6 +15,7 @@ Install all requirements
 1. I want to add the functionality to save images of vehicles that have stopped into a folder.
 2. I want to dockerize this file
 3. Change the image on the readme file
+4. Remove TG from sort and remove skimage from requirements file
 
 
 ![Header](print.png)
