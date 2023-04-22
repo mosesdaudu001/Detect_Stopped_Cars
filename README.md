@@ -14,6 +14,7 @@ Install all requirements
 ### Side Notes:
 1. I want to add the functionality to save images of vehicles that have stopped into a folder.
 2. I want to dockerize this file
+3. Change the image on the readme file
 
 
 ![Header](print.png)
