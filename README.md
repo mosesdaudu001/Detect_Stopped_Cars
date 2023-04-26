@@ -12,7 +12,7 @@ Install all requirements
 `python stopped_car_detect.py`
 
 ## Added Feature
-You can now run the docker file directly and ot will give you the exact same result
+You can now run the docker file directly and it will give you the exact same result
 
 `docker build -t stopped_car .`
 then after building
@@ -22,7 +22,7 @@ then after building
 1. I want to add the functionality to save images of vehicles that have stopped into a folder.
 2. I want to dockerize this file - Done
 3. Change the image on the readme file
-4. Remove TG from sort and remove skimage from requirements file
+4. Remove TG from sort and remove skimage from requirements file - Done
 
 
 ![Header](print.png)
