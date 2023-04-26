@@ -84,12 +84,12 @@ class ObjectDetection():
         cap = cv2.VideoCapture(self.capture)
         assert cap.isOpened()
 
-        result_path = os.path.join(self.result, 'results.avi')
+        # result_path = os.path.join(self.result, 'results.avi')
 
         codec = cv2.VideoWriter_fourcc(*'XVID')
         vid_fps =int(cap.get(cv2.CAP_PROP_FPS))
         vid_width,vid_height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        out = cv2.VideoWriter(result_path, codec, vid_fps, (vid_width, vid_height))
+        out = cv2.VideoWriter('result/results.avi', codec, vid_fps, (vid_width, vid_height))
 
         mask = cv2.imread('masks/mask_traffic_2.png')
 
@@ -117,9 +117,10 @@ class ObjectDetection():
             detect_frame = self.track_detect(img, detections, tracker, last_centroids, stopped_vehicles, counter)
 
             out.write(detect_frame)
-            cv2.imshow('Image', detect_frame)
-            if cv2.waitKey(1) == ord('q'):
-                break
+            # cv2.imshow('Image', detect_frame)
+            # cv2.waitKey(1)
+            # if cv2.waitKey(1) == ord('q'):
+                # break
 
         cap.release()
         cv2.destroyAllWindows()
